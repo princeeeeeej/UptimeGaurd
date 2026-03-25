@@ -1,5 +1,5 @@
 <div align="center">
-  
+
 # ⚡ UptimeGuard
 
 ### Real-Time Website Monitoring & Incident Management Platform
@@ -8,248 +8,361 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql)](https://www.postgresql.org/)
-[![Drizzle](https://img.shields.io/badge/Drizzle-ORM-green?style=for-the-badge)](https://orm.drizzle.team/)
+[![Drizzle ORM](https://img.shields.io/badge/Drizzle-ORM-green?style=for-the-badge)](https://orm.drizzle.team/)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](./LICENSE)
 
-**Monitor your websites, APIs, and servers 24/7 with instant alerts and beautiful dashboards.**
+**A production-style uptime monitoring platform for websites, APIs, and services with intelligent alerting, SSL tracking, incident history, and a real-time dashboard.**
 
-[Features](#-features) • [Tech Stack](#-tech-stack) • [Getting Started](#-getting-started) • [Architecture](#-architecture)
+[Features](#-features) • [Architecture](#-architecture) • [Tech Stack](#-tech-stack) • [Getting Started](#-getting-started) • [Project Structure](#-project-structure)
 
 </div>
 
 ---
 
-## 🎯 Overview
+## 📌 Overview
 
-**UptimeGuard** is a production-ready uptime monitoring platform built with modern technologies. It provides real-time monitoring, intelligent alerting, SSL certificate tracking, and incident management — all wrapped in a beautiful, responsive UI.
+**UptimeGuard** is a full-stack monitoring platform built to track service availability, record performance metrics, detect downtime, manage incidents, and notify users when their systems fail.
 
-**Key Highlights:**
-- 🔄 Real-time monitoring with configurable intervals
-- 📧 Smart email alerts with deduplication
-- 🔒 SSL certificate expiration tracking
-- 📊 Beautiful charts and analytics
-- 🎨 Clean, minimal UI design
-- 📱 Fully responsive on all devices
+It was designed as a practical, production-inspired project that demonstrates:
+
+- scalable full-stack architecture
+- background worker processing
+- modern TypeScript-first development
+- database-driven monitoring workflows
+- responsive dashboard design
+- structured API design
+- authentication and user-based data isolation
 
 ---
 
 ## ✨ Features
 
-### 📊 Real-Time Monitoring
-- HTTP/HTTPS monitoring with configurable intervals
-- Response time tracking with historical charts
-- Uptime percentage calculation
-- Auto-refresh dashboard (30-second intervals)
+### 🔍 Monitoring
+- Monitor websites and APIs using HTTP/HTTPS
+- Track response times and availability
+- Store historical ping results
+- Display last known status in real time
 
-### 🚨 Smart Alerting System
-- Instant email notifications when sites go down
-- Recovery alerts when sites come back up
-- Alert deduplication — no spam, just what matters
-- Escalation system — reminders at 5, 15, 30, 60 minutes
+### 📊 Dashboard
+- Overview cards for:
+  - total monitors
+  - currently up
+  - currently down
+- responsive monitor cards
+- uptime bar visualization
+- quick actions like pause/resume and delete
 
-### 🔒 SSL Certificate Monitoring
-- Expiration tracking with days remaining
-- Certificate details (issuer, protocol, validity)
-- Early warning alerts before certificates expire
-- Visual indicators (valid/warning/expired)
+### 📈 Monitor Detail View
+- dedicated detail page for each monitor
+- response time chart
+- recent checks list
+- SSL status panel
+- incident history section
 
-### 🔥 Incident Management
-- Automatic incident creation on failures
-- Root cause analysis with categorization
-- Incident history with duration tracking
-- Resolution tracking with downtime calculation
+### 🚨 Alerting
+- email alerts for downtime events
+- recovery alerts when service comes back online
+- SSL expiry alert support
+- alert suppression / deduplication logic
 
-### 🎨 Beautiful Dashboard
-- Clean, minimal design with warm aesthetics
-- Fully responsive — works on all devices
-- Real-time status indicators with animations
-- Interactive charts using Recharts
-- Skeleton loading states for better UX
+### 🔒 SSL Monitoring
+- certificate validity checks
+- expiry tracking
+- issuer visibility
+- warning indicators for expiring certificates
+
+### 🧠 Incident Tracking
+- automatic incident creation
+- active incident banner
+- downtime history
+- resolved vs ongoing incident states
 
 ### 🔐 Authentication
-- Clerk integration for secure authentication
-- User-specific monitors — data isolation
-- Protected API routes
+- Clerk-based auth
+- user-specific monitors and data isolation
+- protected dashboard and API access
+
+### ⚙️ Background Processing
+- separate worker process for monitor checks
+- decoupled from frontend request lifecycle
+- enables continuous monitoring independently of UI traffic
 
 ---
 
-## 🛠️ Tech Stack
+## 🏗️ Architecture
 
-### Frontend
-| Technology | Purpose |
-|------------|---------|
-| **Next.js 15** | React framework with App Router |
-| **TypeScript** | Type-safe development |
-| **Tailwind CSS** | Utility-first styling |
-| **Recharts** | Interactive data visualization |
-| **Lucide Icons** | Beautiful icon library |
-| **Clerk** | Authentication & user management |
+UptimeGuard is built around three main layers:
 
-### Backend
-| Technology | Purpose |
-|------------|---------|
-| **Next.js API Routes** | Serverless API endpoints |
-| **Drizzle ORM** | Type-safe database queries |
-| **PostgreSQL** | Primary database |
-| **Resend** | Transactional emails |
-| **Vercel Cron** | Scheduled monitoring jobs |
+### 1. Frontend Application
+Built with **Next.js App Router**, responsible for:
+- dashboard UI
+- monitor management
+- charts and visualizations
+- authentication-aware pages
 
-### Infrastructure
-| Technology | Purpose |
-|------------|---------|
-| **Vercel** | Deployment & hosting |
-| **Neon/Supabase** | Managed PostgreSQL |
-| **Resend** | Email delivery |
+### 2. API Layer
+Implemented using **Next.js Route Handlers**, responsible for:
+- monitor CRUD operations
+- fetching incidents
+- retrieving ping results
+- exposing SSL data
+- debug/testing endpoints
 
----
+### 3. Background Worker
+A standalone worker process continuously handles:
+- scheduled monitor checks
+- saving ping results
+- creating/resolving incidents
+- triggering alert emails
+- SSL validation checks
 
-## 📁 Project Structure
-uptimeguard/
-├── app/
-│ ├── api/
-│ │ ├── monitors/
-│ │ │ ├── route.ts
-│ │ │ └── [id]/route.ts
-│ │ ├── cron/route.ts
-│ │ └── test-alert/route.ts
-│ ├── dashboard/
-│ │ ├── page.tsx
-│ │ └── _components/
-│ │ ├── DashboardNav.tsx
-│ │ ├── StatsGrid.tsx
-│ │ ├── MonitorCard.tsx
-│ │ ├── MonitorsGrid.tsx
-│ │ └── AddMonitorModal.tsx
-│ ├── monitors/[id]/
-│ │ ├── page.tsx
-│ │ └── _components/
-│ │ ├── MonitorHeader.tsx
-│ │ ├── ResponseChart.tsx
-│ │ ├── RecentChecks.tsx
-│ │ ├── SSLCard.tsx
-│ │ └── IncidentHistory.tsx
-│ └── page.tsx
-├── components/
-│ ├── HeroSection.tsx
-│ ├── WhySection.tsx
-│ └── Footer.tsx
-├── db/
-│ ├── index.ts
-│ └── schema.ts
-├── lib/
-│ ├── alerts.ts
-│ └── utils.ts
-└── public/
+### High-Level Flow
 
+```text
+User → Next.js UI → API Routes → PostgreSQL
+                         ↑
+                         │
+                  Background Worker
+                         │
+                         ├─ Monitor Checks
+                         ├─ Incident Updates
+                         ├─ Email Alerts
+                         └─ SSL Checks
+🛠 Tech Stack
+Frontend
+Next.js 15
+React
+TypeScript
+Tailwind CSS
+Lucide React
+Recharts
+Backend
+Next.js Route Handlers
+Drizzle ORM
+PostgreSQL
+Auth & Communication
+Clerk for authentication
+Resend for email alerts
+Background Jobs
+Custom worker process (worker/simple-worker.ts)
+📁 Project Structure
 text
 
+app
+├── api
+│   ├── debug
+│   │   ├── results
+│   │   │   └── route.ts
+│   │   ├── test-alerts
+│   │   │   └── route.ts
+│   │   └── route.ts
+│   ├── incidents
+│   │   └── route.ts
+│   ├── monitors
+│   │   ├── [id]
+│   │   │   └── route.ts
+│   │   └── route.ts
+│   ├── results
+│   │   └── [monitorId]
+│   │       └── route.ts
+│   └── ssl
+│       └── [monitorId]
+│           └── route.ts
+├── dashboard
+│   ├── _component
+│   │   ├── AddMonitorModal.tsx
+│   │   ├── DashboardHeader.tsx
+│   │   ├── DashboardNav.tsx
+│   │   ├── DashboardSkeleton.tsx
+│   │   ├── MonitorCard.tsx
+│   │   ├── MonitorsGrid.tsx
+│   │   └── StatsGrid.tsx
+│   └── page.tsx
+├── monitors
+│   └── [id]
+│       ├── _component
+│       │   ├── IncidentBanner.tsx
+│       │   ├── IncidentHistory.tsx
+│       │   ├── MonitorDetailSkeleton.tsx
+│       │   ├── MonitorHeader.tsx
+│       │   ├── RecentChecks.tsx
+│       │   ├── ResponseChart.tsx
+│       │   ├── SSLCard.tsx
+│       │   └── StatsOverview.tsx
+│       └── page.tsx
+├── favicon.ico
+├── globals.css
+├── layout.tsx
+└── page.tsx
 
----
+components
+├── ui
+│   ├── button.tsx
+│   └── tooltip.tsx
+├── Cards.tsx
+├── Footer.tsx
+├── HeroSection.tsx
+└── WhySection.tsx
 
-## 🚀 Getting Started
+worker
+└── simple-worker.ts
+⚙️ Worker Service
+Unlike many monitoring tools that depend on cron-based route triggers, UptimeGuard uses a dedicated worker process.
 
-### Prerequisites
+Why this approach?
+keeps monitoring independent from frontend requests
+simplifies local development
+gives more control over execution logic
+mirrors how real-world background services are often structured
+Responsibilities of the worker
+fetch active monitors from database
+run checks against target URLs
+measure response times
+persist ping results
+create or resolve incidents
+send alert emails
+perform SSL checks
+Worker Entry Point
+text
 
-- Node.js 18+
-- PostgreSQL database
-- Clerk account
-- Resend account
+worker/simple-worker.ts
+🗄 Database Design
+The system is centered around monitoring entities and their operational history.
 
-### Installation
+Core tables
+monitors
+ping_results
+incidents
+ssl_checks
+alert_channels
+root_cause_analyses
+Main relationships
+one user can own many monitors
+one monitor can have many ping results
+one monitor can have many incidents
+one monitor can have many SSL checks
+This schema allows the platform to preserve operational history and support future analytics features.
 
-1. **Clone the repository**
-```bash
-1.git clone https://github.com/yourusername/uptimeguard.git
+📡 API Reference
+Monitor APIs
+Method	Endpoint	Description
+GET	/api/monitors	Fetch all monitors for current user
+POST	/api/monitors	Create a new monitor
+PATCH	/api/monitors/[id]	Update a monitor
+DELETE	/api/monitors/[id]	Delete a monitor
+Result APIs
+Method	Endpoint	Description
+GET	/api/results/[monitorId]	Fetch ping results for a monitor
+Incident APIs
+Method	Endpoint	Description
+GET	/api/incidents	Fetch incidents
+SSL APIs
+Method	Endpoint	Description
+GET	/api/ssl/[monitorId]	Fetch SSL data for a monitor
+Debug APIs
+Method	Endpoint	Description
+GET	/api/debug	Debug endpoint
+GET	/api/debug/results	Debug monitor results
+GET	/api/debug/test-alerts	Trigger / test alerts
+🚀 Getting Started
+Prerequisites
+Node.js 18+
+PostgreSQL database
+Clerk account
+Resend account
+1. Clone the repository
+Bash
+
+git clone https://github.com/yourusername/uptimeguard.git
 cd uptimeguard
+2. Install dependencies
+Bash
 
-2.Install dependencies
 npm install
+3. Configure environment variables
+Create a .env.local file:
 
-3.Set up environment variables
-cp .env.example .env.local
+env
 
-# Database
-DATABASE_URL="postgresql://..."
+DATABASE_URL=your_postgres_connection_url
 
-# Clerk Auth
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_..."
-CLERK_SECRET_KEY="sk_..."
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+CLERK_SECRET_KEY=your_clerk_secret_key
 
-# Resend Email
-RESEND_API_KEY="re_..."
+RESEND_API_KEY=your_resend_api_key
 
-# App
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-CRON_SECRET="your-secret-key"
-Set up the database
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+4. Push database schema
+Bash
 
-4.npm run db:push
-Run the development server
+npm run db:push
+5. Start the Next.js app
+Bash
 
-5.npm run dev
-Open http://localhost:3000
+npm run dev
+6. Start the worker
+In a separate terminal:
 
+Bash
 
-🗄️ Database Schema
+npm run worker
+💡 Development Notes
+Local development requires two processes
+Because monitor execution is handled by a separate worker, you should run:
 
-monitors {
-  id            UUID PRIMARY KEY
-  user_id       VARCHAR NOT NULL
-  name          VARCHAR NOT NULL
-  url           VARCHAR NOT NULL
-  interval      INTEGER DEFAULT 60
-  is_active     BOOLEAN DEFAULT true
-  created_at    TIMESTAMP
-  updated_at    TIMESTAMP
-}
+Bash
 
-ping_results {
-  id            UUID PRIMARY KEY
-  monitor_id    UUID REFERENCES monitors(id)
-  status_code   INTEGER
-  response_time REAL
-  is_up         BOOLEAN NOT NULL
-  error_message TEXT
-  checked_at    TIMESTAMP
-}
+npm run dev
+npm run worker
+Recommended improvement
+For production, the worker can be deployed separately using:
 
-incidents {
-  id            UUID PRIMARY KEY
-  monitor_id    UUID REFERENCES monitors(id)
-  started_at    TIMESTAMP
-  resolved_at   TIMESTAMP
-  cause         TEXT
-}
+Railway
+Render
+Fly.io
+Docker container
+VPS process manager like PM2
+🎨 UI Highlights
+warm neutral color system for polished visual identity
+responsive dashboard optimized for desktop and mobile
+modular component architecture
+skeleton states for smoother perceived performance
+clean card-based layout for monitor summaries and details
+📈 Engineering Highlights
+This project demonstrates practical experience with:
 
-ssl_checks {
-  id                UUID PRIMARY KEY
-  monitor_id        UUID REFERENCES monitors(id)
-  is_valid          BOOLEAN NOT NULL
-  issuer            VARCHAR
-  days_until_expiry INTEGER
-  checked_at        TIMESTAMP
-}
+component-driven frontend architecture
+file-based routing with Next.js App Router
+background job design using a worker process
+TypeScript-based API development
+database modeling with Drizzle ORM
+auth-protected multi-user apps
+email notification workflows
+real-time dashboard UX patterns
+reusable UI composition and maintainable code structure
+🔮 Future Improvements
+Slack / Discord / Telegram alerts
+public status pages
+multi-region checks
+retry & backoff policies
+role-based team access
+webhook integrations
+advanced analytics & trends
+queue-based worker scaling
+👨‍💻 Author
+Prince Jaiswal
 
+If you like this project, feel free to connect or reach out.
 
-🏗️ Architecture
+GitHub: https://github.com/princeeeeeej
+LinkedIn: https://www.linkedin.com/in/prince-jaiswal-2386702a1
+Portfolio: https://portfolio-hazel-phi-73.vercel.app/
+📄 License
+This project is licensed under the MIT License.
 
-┌─────────────────────────────────────────────────────────┐
-│                    CLIENT (Browser)                      │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐  │
-│  │  Dashboard  │  │  Monitor    │  │  Landing Page   │  │
-│  └──────┬──────┘  └──────┬──────┘  └─────────────────┘  │
-└─────────┼────────────────┼──────────────────────────────┘
-          │                │
-          ▼                ▼
-┌─────────────────────────────────────────────────────────┐
-│                  NEXT.JS API ROUTES                      │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐  │
-│  │ /api/       │  │ /api/cron   │  │ /api/test-alert │  │
-│  │ monitors    │  │             │  │                 │  │
-│  └──────┬──────┘  └──────┬──────┘  └────────┬────────┘  │
-└─────────┼────────────────┼──────────────────┼───────────┘
-          │                │                  │
-          ▼                ▼                  ▼
-┌─────────────────┐  ┌─────────────┐  ┌───────────────────┐
-│   PostgreSQL    │  │  External   │  │    Resend API     │
-│   Database      │  │  Websites   │  │    (Email)        │
-└─────────────────┘  └─────────────┘  └───────────────────┘
+<div align="center">
+Built with precision, designed for reliability.
+
+If you found this project useful, consider giving it a ⭐
+
+</div> ```
