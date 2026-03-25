@@ -1,3 +1,4 @@
+// worker.ts
 import "dotenv/config";
 
 import { db } from "@/db";
@@ -11,7 +12,6 @@ import {
 import { eq, desc, and, isNull } from "drizzle-orm";
 import { pingUrl } from "@/lib/ping";
 import { analyzeRootCause } from "@/lib/root-cause";
-import { shouldSendAlert } from "@/lib/smart-alert";
 import { sendAlert } from "@/lib/alerts";
 import { checkSSLCertificate } from "@/lib/ssl-checker";
 import { detectAnomaly } from "@/lib/anamoly";
@@ -30,7 +30,7 @@ async function checkAllMonitors() {
 
     console.log(`\n═══════════════════════════════════════════`);
     console.log(`🔍 Checking ${activeMonitors.length} active monitor(s)...`);
-    console.log(`═══════════════════════════════════════════`);
+    console.log(`═══��═══════════════════════════════════════`);
 
     for (const monitor of activeMonitors) {
       const { id: monitorId, url, name, userId } = monitor;
@@ -38,7 +38,7 @@ async function checkAllMonitors() {
       try {
         console.log(`\n🔍 Checking ${name} (${url})...`);
 
-        // 1. ping
+        // 1. Ping
         const result = await pingUrl(url);
 
         console.log(
@@ -49,7 +49,7 @@ async function checkAllMonitors() {
           }`
         );
 
-        // 2. save ping result
+        // 2. Save ping result
         await db.insert(pingResults).values({
           monitorId,
           statusCode: result.statusCode,
@@ -58,51 +58,52 @@ async function checkAllMonitors() {
           errorMessage: result.errorMessage,
         });
 
-        // 3. anomaly detection
-        try {
-          const recentResults = await db
-            .select()
-            .from(pingResults)
-            .where(eq(pingResults.monitorId, monitorId))
-            .orderBy(desc(pingResults.checkedAt))
-            .limit(30);
+        // 3. Anomaly detection (only if UP)
+        if (result.isUp) {
+          try {
+            const recentResults = await db
+              .select()
+              .from(pingResults)
+              .where(eq(pingResults.monitorId, monitorId))
+              .orderBy(desc(pingResults.checkedAt))
+              .limit(30);
 
-          const anomalyResult = detectAnomaly(
-            recentResults.map((r) => ({
-              responseTime: r.responseTime || 0,
-              checkedAt: r.checkedAt,
-            }))
-          );
-
-          if (anomalyResult.severity === "critical" && result.isUp) {
-            console.log(
-              `🔮 Predictive alert: possible downtime in ~${anomalyResult.predictedDowntime} min`
+            const anomalyResult = detectAnomaly(
+              recentResults.map((r) => ({
+                responseTime: r.responseTime || 0,
+                checkedAt: r.checkedAt,
+              }))
             );
 
-            await sendAlert({
-              monitorName: name,
-              url,
-              userId,
-              error: `🔮 PREDICTIVE ALERT: ${anomalyResult.message}. Estimated downtime in ~${anomalyResult.predictedDowntime} minutes.`,
-            });
+            if (anomalyResult.severity === "critical") {
+              console.log(
+                `🔮 Predictive alert: possible downtime in ~${anomalyResult.predictedDowntime} min`
+              );
+
+              await sendAlert({
+                monitorName: name,
+                url,
+                userId,
+                error: `🔮 PREDICTIVE ALERT: ${anomalyResult.message}. Estimated downtime in ~${anomalyResult.predictedDowntime} minutes.`,
+              });
+            }
+          } catch (err) {
+            console.error(`Anomaly detection error for ${name}:`, err);
           }
-        } catch (err) {
-          console.error(`Anomaly detection error for ${name}:`, err);
         }
 
-        // 4. if down -> incident + root cause + smart alert
+        // 4. If DOWN -> incident + root cause + alert
         if (!result.isUp) {
           console.log(`🔴 ${name} is DOWN. Analyzing...`);
 
+          // Root cause analysis
           let rootCause = null;
-
           try {
             rootCause = await analyzeRootCause(url, {
               code: result.errorMessage,
               message: result.errorMessage,
               response: { status: result.statusCode },
             });
-
             console.log(
               `🔬 Root Cause: ${rootCause.category} — ${rootCause.description}`
             );
@@ -110,6 +111,7 @@ async function checkAllMonitors() {
             console.error(`Root cause analysis failed for ${name}:`, err);
           }
 
+          // Check for existing active incident for THIS monitor
           const existingIncident = await db
             .select()
             .from(incidents)
@@ -121,7 +123,12 @@ async function checkAllMonitors() {
             )
             .limit(1);
 
-          if (existingIncident.length === 0) {
+          const isNewIncident = existingIncident.length === 0;
+
+          // Create incident if new
+          if (isNewIncident) {
+            console.log(`🆕 New incident for ${name}`);
+
             const newIncident = await db
               .insert(incidents)
               .values({
@@ -142,37 +149,62 @@ async function checkAllMonitors() {
                 technicalDetail: rootCause.technicalDetail,
               });
             }
-          }
 
-          try {
-            const alertDecision = await shouldSendAlert(monitorId, true);
-
-            console.log(
-              `🔔 Alert decision: ${alertDecision.alertType} — ${alertDecision.reason}`
-            );
-
-            if (alertDecision.shouldSendAlert) {
+            // ✅ ALWAYS alert on new incident
+            try {
               await sendAlert({
                 monitorName: name,
                 url,
                 userId,
-                error: `🔴 ${name} is DOWN!\n${
-                  rootCause
-                    ? `Root Cause: ${rootCause.description}\nSuggestion: ${rootCause.suggestion}`
-                    : result.errorMessage || `HTTP ${result.statusCode}`
-                }`,
+                error: rootCause
+                  ? `Root Cause: ${rootCause.description}\nSuggestion: ${rootCause.suggestion}`
+                  : result.errorMessage || `HTTP ${result.statusCode}`,
               });
-
-              console.log(`📧 Alert sent: ${alertDecision.alertType}`);
-            } else {
-              console.log(`🔕 Alert suppressed: ${alertDecision.reason}`);
+              console.log(`📧 Initial alert sent for ${name}`);
+            } catch (err) {
+              console.error(`Failed to send initial alert for ${name}:`, err);
             }
-          } catch (err) {
-            console.error(`Smart alert failed for ${name}:`, err);
+          } else {
+            // Existing incident - check for escalation
+            const downSince = new Date(existingIncident[0].startedAt);
+            const downMinutes = Math.floor(
+              (Date.now() - downSince.getTime()) / 60000
+            );
+
+            const escalationPoints = [5, 15, 30, 60, 120, 240];
+            const shouldEscalate = escalationPoints.some(
+              (point) => downMinutes >= point && downMinutes < point + 2
+            );
+
+            if (shouldEscalate) {
+              try {
+                await sendAlert({
+                  monitorName: name,
+                  url,
+                  userId,
+                  error: `⏰ STILL DOWN for ${downMinutes} minutes!\n${
+                    rootCause
+                      ? `Root Cause: ${rootCause.description}\nSuggestion: ${rootCause.suggestion}`
+                      : result.errorMessage || `HTTP ${result.statusCode}`
+                  }`,
+                });
+                console.log(
+                  `📧 Escalation alert sent for ${name} (${downMinutes} min)`
+                );
+              } catch (err) {
+                console.error(`Escalation alert failed for ${name}:`, err);
+              }
+            } else {
+              const nextEscalation =
+                escalationPoints.find((p) => p > downMinutes) || 480;
+              console.log(
+                `🔕 Suppressed: ${name} down for ${downMinutes} min. Next alert at ${nextEscalation} min.`
+              );
+            }
           }
         }
 
-        // 5. if back up -> resolve incident
+        // 5. If BACK UP -> resolve incident
         if (result.isUp) {
           const ongoingIncident = await db
             .select()
@@ -208,7 +240,7 @@ async function checkAllMonitors() {
           }
         }
 
-        // 6. ssl check once per 24h
+        // 6. SSL check (once per 24h)
         try {
           const lastSSLCheck = await db
             .select()
@@ -260,12 +292,12 @@ async function checkAllMonitors() {
 }
 
 console.log("═══════════════════════════════════════════");
-console.log("🔄 UptimeGuard Simple Worker Started");
-console.log("⏱ Running every 60 seconds");
+console.log("🔄 UptimeGuard Worker Started");
+console.log("⏱  Running every 60 seconds");
 console.log("═══════════════════════════════════════════");
 
-// run immediately once
+// Run immediately
 checkAllMonitors();
 
-// run every 60 seconds
+// Run every 60 seconds
 setInterval(checkAllMonitors, 60 * 1000);
