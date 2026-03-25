@@ -117,99 +117,98 @@ A standalone worker process continuously handles:
 - SSL validation checks
 
 ### High-Level Flow
+User → Next.js UI → API Routes → PostgreSQL<br />
+                         ↑<br />
+                         │<br />
+                  Background Worker<br />
+                         │<br />
+                         ├─ Monitor Checks<br />
+                         ├─ Incident Updates<br />
+                         ├─ Email Alerts<br />
+# 🛠 Tech Stack
+** Frontend**
+- Next.js 15
+- React
+- TypeScript
+- Tailwind CSS
+- Lucide React
+- Recharts
+  
+**Backend**
+- Next.js Route Handlers
+- Drizzle ORM
+- PostgreSQL
+- Auth & Communication
+- Clerk for authentication
+- Resend for email alerts
+- Background Jobs
+- Custom worker process (worker/simple-worker.ts)
 
-```text
-User → Next.js UI → API Routes → PostgreSQL
-                         ↑
-                         │
-                  Background Worker
-                         │
-                         ├─ Monitor Checks
-                         ├─ Incident Updates
-                         ├─ Email Alerts
-                         └─ SSL Checks
-🛠 Tech Stack
-Frontend
-Next.js 15
-React
-TypeScript
-Tailwind CSS
-Lucide React
-Recharts
-Backend
-Next.js Route Handlers
-Drizzle ORM
-PostgreSQL
-Auth & Communication
-Clerk for authentication
-Resend for email alerts
-Background Jobs
-Custom worker process (worker/simple-worker.ts)
-📁 Project Structure
-text
 
-app
-├── api
-│   ├── debug
-│   │   ├── results
-│   │   │   └── route.ts
-│   │   ├── test-alerts
-│   │   │   └── route.ts
-│   │   └── route.ts
-│   ├── incidents
-│   │   └── route.ts
-│   ├── monitors
-│   │   ├── [id]
-│   │   │   └── route.ts
-│   │   └── route.ts
-│   ├── results
-│   │   └── [monitorId]
-│   │       └── route.ts
-│   └── ssl
-│       └── [monitorId]
-│           └── route.ts
-├── dashboard
-│   ├── _component
-│   │   ├── AddMonitorModal.tsx
-│   │   ├── DashboardHeader.tsx
-│   │   ├── DashboardNav.tsx
-│   │   ├── DashboardSkeleton.tsx
-│   │   ├── MonitorCard.tsx
-│   │   ├── MonitorsGrid.tsx
-│   │   └── StatsGrid.tsx
-│   └── page.tsx
-├── monitors
-│   └── [id]
-│       ├── _component
-│       │   ├── IncidentBanner.tsx
-│       │   ├── IncidentHistory.tsx
-│       │   ├── MonitorDetailSkeleton.tsx
-│       │   ├── MonitorHeader.tsx
-│       │   ├── RecentChecks.tsx
-│       │   ├── ResponseChart.tsx
-│       │   ├── SSLCard.tsx
-│       │   └── StatsOverview.tsx
-│       └── page.tsx
-├── favicon.ico
-├── globals.css
-├── layout.tsx
-└── page.tsx
+# 📁 Project Structure
 
-components
-├── ui
-│   ├── button.tsx
-│   └── tooltip.tsx
-├── Cards.tsx
-├── Footer.tsx
-├── HeroSection.tsx
-└── WhySection.tsx
+app<br />
+├── api<br />
+│   ├── debug<br />
+│   │   ├── results<br />
+│   │   │   └── route.ts<br />
+│   │   ├── test-alerts<br />
+│   │   │   └── route.ts<br />
+│   │   └── route.ts<br />
+│   ├── incidents<br />
+│   │   └── route.ts<br />
+│   ├── monitors<br />
+│   │   ├── [id]<br />
+│   │   │   └── route.ts<br />
+│   │   └── route.ts<br />
+│   ├── results<br />
+│   │   └── [monitorId]<br />
+│   │       └── route.ts<br />
+│   └── ssl<br />
+│       └── [monitorId]<br />
+│           └── route.ts<br />
+├── dashboard<br />
+│   ├── _component<br />
+│   │   ├── AddMonitorModal.tsx<br />
+│   │   ├── DashboardHeader.tsx<br />
+│   │   ├── DashboardNav.tsx<br />
+│   │   ├── DashboardSkeleton.tsx<br />
+│   │   ├── MonitorCard.tsx<br />
+│   │   ├── MonitorsGrid.tsx<br />
+│   │   └── StatsGrid.tsx<br />
+│   └── page.tsx<br />
+├── monitors<br />
+│   └── [id]<br />
+│       ├── _component<br />
+│       │   ├── IncidentBanner.tsx<br />
+│       │   ├── IncidentHistory.tsx<br />
+│       │   ├── MonitorDetailSkeleton.tsx<br />
+│       │   ├── MonitorHeader.tsx<br />
+│       │   ├── RecentChecks.tsx<br />
+│       │   ├── ResponseChart.tsx<br />
+│       │   ├── SSLCard.tsx<br />
+│       │   └── StatsOverview.tsx<br />
+│       └── page.tsx<br />
+├── favicon.icon<br />
+├── globals.css<br />
+├── layout.tsx<br />
+└── page.tsx<br />
+<br />
+components<br />
+├── ui<br />
+│   ├── button.tsx<br />
+│   └── tooltip.tsx<br />
+├── Cards.tsx<br />
+├── Footer.tsx<br />
+├── HeroSection.tsx<br />
+└── WhySection.tsx<br />
+<br />
+worker<br />
+└── simple-worker.ts<br />
+⚙️ Worker Service<br />
+Unlike many monitoring tools that depend on cron-based route triggers, UptimeGuard uses a dedicated worker process.<br />
 
-worker
-└── simple-worker.ts
-⚙️ Worker Service
-Unlike many monitoring tools that depend on cron-based route triggers, UptimeGuard uses a dedicated worker process.
-
-Why this approach?
+# Why this approach?
 keeps monitoring independent from frontend requests
 simplifies local development
 gives more control over execution logic
@@ -223,67 +222,59 @@ create or resolve incidents
 send alert emails
 perform SSL checks
 Worker Entry Point
-text
+worker/simple-worker.ts<br />
 
-worker/simple-worker.ts
-🗄 Database Design
+## 🗄 Database Design<br />
 The system is centered around monitoring entities and their operational history.
 
-Core tables
-monitors
-ping_results
-incidents
-ssl_checks
-alert_channels
-root_cause_analyses
-Main relationships
-one user can own many monitors
-one monitor can have many ping results
-one monitor can have many incidents
-one monitor can have many SSL checks
-This schema allows the platform to preserve operational history and support future analytics features.
+# Core tables
+- monitors
+- ping_results
+- incidents
+- ssl_checks
+- alert_channels
+- root_cause_analyses
+- Main relationships
+- one user can own many monitors
+- one monitor can have many ping results
+- one monitor can have many incidents
+- one monitor can have many SSL checks
+- This schema allows the platform to preserve operational history and support future analytics features.
 
-📡 API Reference
-Monitor APIs
-Method	Endpoint	Description
-GET	/api/monitors	Fetch all monitors for current user
-POST	/api/monitors	Create a new monitor
-PATCH	/api/monitors/[id]	Update a monitor
-DELETE	/api/monitors/[id]	Delete a monitor
-Result APIs
-Method	Endpoint	Description
-GET	/api/results/[monitorId]	Fetch ping results for a monitor
-Incident APIs
-Method	Endpoint	Description
-GET	/api/incidents	Fetch incidents
-SSL APIs
-Method	Endpoint	Description
-GET	/api/ssl/[monitorId]	Fetch SSL data for a monitor
-Debug APIs
-Method	Endpoint	Description
-GET	/api/debug	Debug endpoint
-GET	/api/debug/results	Debug monitor results
-GET	/api/debug/test-alerts	Trigger / test alerts
-🚀 Getting Started
-Prerequisites
-Node.js 18+
-PostgreSQL database
-Clerk account
-Resend account
-1. Clone the repository
-Bash
+# 📡 API Reference
+- Monitor APIs
+- Method	Endpoint	Description
+- GET	/api/monitors	Fetch all monitors for current user
+- POST	/api/monitors	Create a new monitor
+- PATCH	/api/monitors/[id]	Update a monitor
+- DELETE	/api/monitors/[id]	Delete a monitor
+- Result APIs
+- Method	Endpoint	Description
+- GET	/api/results/[monitorId]	Fetch ping results for a monitor
+- Incident APIs
+- Method	Endpoint	Description
+- GET	/api/incidents	Fetch incidents
+- SSL APIs
+- Method	Endpoint	Description
+- GET	/api/ssl/[monitorId]	Fetch SSL data for a monitor
+- Debug APIs
+M- ethod	Endpoint	Description
+- GET	/api/debug	Debug endpoint
+- GET	/api/debug/results	Debug monitor results
+- /api/debug/test-alerts	Trigger / test alerts
+- 
+# 🚀 Getting Started<br />
+Prerequisites- Node.js 18+, PostgreSQL database, Clerk account, Resend account
 
+**1. Clone the repository**<br />
 git clone https://github.com/yourusername/uptimeguard.git
 cd uptimeguard
-2. Install dependencies
-Bash
 
+**2. Install dependencies**<br />
 npm install
-3. Configure environment variables
+
+**3. Configure environment variables**<br />
 Create a .env.local file:
-
-env
-
 DATABASE_URL=your_postgres_connection_url
 
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
@@ -292,77 +283,80 @@ CLERK_SECRET_KEY=your_clerk_secret_key
 RESEND_API_KEY=your_resend_api_key
 
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-4. Push database schema
-Bash
 
+**4. Push database schema**<br /> 
 npm run db:push
-5. Start the Next.js app
-Bash
 
+**5. Start the Next.js app<br />**
 npm run dev
-6. Start the worker
+
+**6. Start the worker**<br />
 In a separate terminal:
-
-Bash
-
 npm run worker
-💡 Development Notes
+
+
+**💡 Development Notes**<br />
 Local development requires two processes
 Because monitor execution is handled by a separate worker, you should run:
-
-Bash
-
 npm run dev
 npm run worker
 Recommended improvement
+
 For production, the worker can be deployed separately using:
 
-Railway
-Render
-Fly.io
-Docker container
-VPS process manager like PM2
-🎨 UI Highlights
-warm neutral color system for polished visual identity
-responsive dashboard optimized for desktop and mobile
-modular component architecture
-skeleton states for smoother perceived performance
-clean card-based layout for monitor summaries and details
-📈 Engineering Highlights
+- Railway
+- Render
+- Fly.io
+- Docker container
+- VPS process manager like PM2
+
+
+**🎨 UI Highlights**
+- warm neutral color system for polished visual identity
+- responsive dashboard optimized for desktop and mobile
+- modular component architecture
+- skeleton states for smoother perceived performance
+- clean card-based layout for monitor summaries and details
+
+
+**📈 Engineering Highlights**
 This project demonstrates practical experience with:
 
-component-driven frontend architecture
-file-based routing with Next.js App Router
-background job design using a worker process
-TypeScript-based API development
-database modeling with Drizzle ORM
-auth-protected multi-user apps
-email notification workflows
-real-time dashboard UX patterns
-reusable UI composition and maintainable code structure
-🔮 Future Improvements
-Slack / Discord / Telegram alerts
-public status pages
-multi-region checks
-retry & backoff policies
-role-based team access
-webhook integrations
-advanced analytics & trends
-queue-based worker scaling
-👨‍💻 Author
+- component-driven frontend architecture
+- file-based routing with Next.js App Router
+- background job design using a worker process
+- TypeScript-based API development
+- database modeling with Drizzle ORM
+- auth-protected multi-user apps
+- email notification workflows
+- real-time dashboard UX patterns
+- reusable UI composition and maintainable code structure
+
+**🔮 Future Improvements**
+- Slack / Discord / Telegram alerts
+- public status pages
+- multi-region checks
+- retry & backoff policies
+- role-based team access
+- webhook integrations
+- advanced analytics & trends
+- queue-based worker scaling
+
+**👨‍💻 Author**
 Prince Jaiswal
 
 If you like this project, feel free to connect or reach out.
 
-GitHub: https://github.com/princeeeeeej
-LinkedIn: https://www.linkedin.com/in/prince-jaiswal-2386702a1
-Portfolio: https://portfolio-hazel-phi-73.vercel.app/
-📄 License
+- GitHub: https://github.com/princeeeeeej
+- LinkedIn: https://www.linkedin.com/in/prince-jaiswal-2386702a1
+- Portfolio: https://portfolio-hazel-phi-73.vercel.app/
+
+**📄 License**
+
 This project is licensed under the MIT License.
 
 <div align="center">
 Built with precision, designed for reliability.
 
 If you found this project useful, consider giving it a ⭐
-
-</div> ```
+</div>
